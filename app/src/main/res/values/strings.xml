@@ -4,4 +4,10 @@
     <string name="title_home">Home</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="projecte_m8">PROJECTE M8</string>
+    <string name="en_aquest_projecte_programarem_un_aplicatiu_mapa_usant_funcionalitats_com_la_localitzaci_i_altres_funcionalitats_per_obtenir_informaci_referent_a_la_ubicaci">En aquest projecte programarem un aplicatiu/mapa, usant funcionalitats com la localització i altres funcionalitats per obtenir informació referent a la ubicació.</string>
+    <string name="created_by_jordi_guzm_n">Created by: Jordi Guzmán</string>
+    <string name="location_permission_denied">Location permission denied</string>
+    <string name="permission_rationale_location">Permission Rationale Location</string>
+    <string name="permission_required_toast">Permission Required</string>
 </resources>

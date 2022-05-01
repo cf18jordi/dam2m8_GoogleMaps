@@ -52,13 +52,12 @@ public class ApiThread extends AsyncTask<Void, Void, String> {
             String sunset = jObject.getString("sunset");
 
 
-            Log.i("logtest", "------>" + sunrise);
-            Log.i("logtest", "------>" + sunset);
+            Log.i("logtest", "--Sunrise---->" + sunrise);
+            Log.i("logtest", "--Sunset---->" + sunset);
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
-
     }
 }
 

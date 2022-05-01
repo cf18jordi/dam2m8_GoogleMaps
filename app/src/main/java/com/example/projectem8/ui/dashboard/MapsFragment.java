@@ -5,21 +5,25 @@ import static android.content.ContentValues.TAG;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
+import com.example.projectem8.Interfice.ApiCall;
+import com.example.projectem8.ApiThread;
+import com.example.projectem8.Interfice.ApiCall2;
+import com.example.projectem8.Model.ModelApi;
+import com.example.projectem8.ModelFlickr.FlickrModel;
+import com.example.projectem8.Glide.PageViewSlider;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -28,16 +32,15 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 
 public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButtonClickListener,
@@ -63,9 +66,10 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
          */
 
 
+
         @Override
         public void onMapReady(final GoogleMap map) {
-            enableMyLocation();
+            //enableMyLocation();
             LatLng institute = new LatLng(41.41637924698498, 2.199256829917431);
             map.addMarker(new MarkerOptions().position(institute).title("Marker in IES Joan d'Austria"));
             map.moveCamera(CameraUpdateFactory.newLatLng(institute));
@@ -89,7 +93,7 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
 
                     map.moveCamera(CameraUpdateFactory.newLatLng(ubiOnClick));
 
-                    enableMyLocation();
+                    //enableMyLocation();
 
 
                     // add Maps Marker, and Marker information
@@ -112,6 +116,18 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
                                 String address3 = (addresses.get(0).getLocality());
                                 map.clear();
                                 map.addMarker(new MarkerOptions().position(ubiOnClick).title("Adreça: " + address + ", " + address2 + ", " + address3 + "."));
+
+                                Log.d(TAG, "locationInfoResume--->");
+                                Log.d(TAG, "---------------------------------------------------------|");
+                                Log.d(TAG, "Informació referent a la ubicació:                       |");
+                                Log.d(TAG, "---------------------------------------------------------|");
+                                Log.d(TAG, "<|LATITUD|>              <" + latLng.latitude        + ">");
+                                Log.d(TAG, "<|LONGITUD|>             <" + latLng.longitude       + ">");
+                                Log.d(TAG, "<|LOCALITAT|>            <" + address3               + ">");
+                                Log.d(TAG, "<|ADREÇA|>               <" + address                + ">");
+                                Log.d(TAG, "<|AREA ADMINISTRADORA|>  <" + address2               + ">");
+                                Log.d(TAG, "---------------------------------------------------------|");
+
                             }
                         }
                     } catch (Exception e) {
@@ -120,7 +136,7 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
                 }
             });
         }
-
+        /*
         private void enableMyLocation() {
             if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
@@ -133,7 +149,7 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
                 PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
                         Manifest.permission.ACCESS_FINE_LOCATION, true);
             }
-        }
+        }*/
     };
 
     @Nullable
@@ -172,6 +188,88 @@ public class MapsFragment extends Fragment implements GoogleMap.OnMyLocationButt
                     String address3 = (addresses.get(0).getLocality());
                 }
             }
+
+            ApiThread apiT = new ApiThread(lat, lng);
+            apiT.execute();
+
+
+            Retrofit retrofit1 = new Retrofit.Builder()
+                    .baseUrl("https://api.sunrise-sunset.org/")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            Retrofit retrofit2 = new Retrofit.Builder()
+                    .baseUrl("https://www.flickr.com/")
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            String sLat = Double.toString(lat);
+            String sLng = Double.toString(lng);
+
+            ApiCall apiCall = retrofit1.create(ApiCall.class);
+            Call<ModelApi> call = apiCall.getData(sLat, sLng);
+
+
+            ApiCall2 apiCall2 = retrofit2.create(ApiCall2.class);
+            Call<FlickrModel> call2 = apiCall2.getData(sLat, sLng);
+
+            call.enqueue(new Callback<ModelApi>(){
+                @Override
+                public void onResponse(Call<ModelApi> call, Response<ModelApi> response) {
+
+                    Log.i("testApi",
+                            response.body().getStatus() + " - SUNRISE: "
+                                    + response.body().getResults().getSunrise() + " - SUNSET: "
+                                    + response.body().getResults().getSunset()
+                    );
+                }
+                @Override
+                public void onFailure(Call<ModelApi> call, Throwable t) {
+                }
+            });
+
+            call2.enqueue(new Callback<FlickrModel>(){
+                @Override
+                public void onResponse(Call<FlickrModel> call, Response<FlickrModel> response) {
+
+                    String secret = response.body().getPhotos().getPhoto().get(0).getSecret();
+                    String id = response.body().getPhotos().getPhoto().get(0).getId();
+                    String server = response.body().getPhotos().getPhoto().get(0).getServer();
+                    String title = response.body().getPhotos().getPhoto().get(0).getTitle();
+
+                    String url = "https://live.staticflickr.com/" + server +  "/" + id + "_" + secret + ".jpg";
+
+                    /*Log.i("testApi", " - "
+                            + response.body().getStat() + " - "
+                            + id + " - "
+                            + secret + " - "
+                            + server + " - "
+                            + title + " - "
+                    );*/
+
+                    ArrayList<String> urlImg = new ArrayList<>();
+
+                    for(int i = 0 ; i<10 ; i++)  {
+                        secret = response.body().getPhotos().getPhoto().get(i).getSecret();
+                        id = response.body().getPhotos().getPhoto().get(i).getId();
+                        server = response.body().getPhotos().getPhoto().get(i).getServer();
+                        url = "https://live.staticflickr.com/" + server +  "/" + id + "_" + secret + ".jpg";
+                        Log.d(TAG, "-----------------------------------------------------------------------------|");
+                        Log.i("printImage", "URL IMAGE " + (i + 1) + " :"  + url + "  ||");
+                        urlImg.add(url);
+                    }
+
+                    Intent intent = new Intent(getActivity(), PageViewSlider.class);
+                    intent.putStringArrayListExtra("urls", urlImg);
+                    startActivity(intent);
+
+                    Log.d(TAG, "-----------------------------------------------------------------------------|");
+                }
+                @Override
+                public void onFailure(Call<FlickrModel> call, Throwable t) {
+                }
+            });
+
         } catch (Exception e) {
             Toast.makeText(getActivity(), "No Location Name Found", Toast.LENGTH_LONG).show();
         }
